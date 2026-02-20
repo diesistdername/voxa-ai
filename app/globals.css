@@ -155,6 +155,11 @@
   .bn-color-picker-dropdown {
     top: -110px !important;
   }
+
+  /* BlockNote editor: inherit app background so dark mode matches */
+  .bn-editor {
+    background-color: transparent !important;
+  }
 }
 
 @layer base {

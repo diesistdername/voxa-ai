@@ -12,7 +12,7 @@ import { ToasterProvider } from "@/components/providers/toaster-provider";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Zotion",
+  title: "Notes AI",
   description:
     "The seamless platform where creative and productive work happens.",
   icons: {
