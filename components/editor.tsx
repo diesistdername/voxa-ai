@@ -17,7 +17,7 @@ import { BlockNoteView } from "@blocknote/mantine";
 import { useTheme } from "next-themes";
 import { useEdgeStore } from "@/lib/edgestore";
 import { codeBlockOptions } from "@blocknote/code-block";
-import { FileText } from "lucide-react";
+import { ChevronRight, FileText } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -100,6 +100,41 @@ const PageLinkBlock = createReactBlockSpec(
   },
 );
 
+// --- Hidden block (Processing Mode toggle) ---
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const HiddenBlockView = ({ block, editor }: { block: any; editor: any }) => (
+  <div
+    contentEditable={false}
+    role="button"
+    onClick={() => {
+      try {
+        const original = JSON.parse(block.props.originalContent);
+        editor.replaceBlocks([block.id], [original]);
+      } catch {
+        editor.removeBlocks([block.id]);
+      }
+    }}
+    className="my-0.5 flex cursor-pointer select-none items-center gap-2 rounded-md border border-dashed border-border px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+  >
+    <ChevronRight className="h-3 w-3 shrink-0" />
+    <span>Hidden block — click to restore</span>
+  </div>
+);
+
+const HiddenBlock = createReactBlockSpec(
+  {
+    type: "hidden" as const,
+    propSchema: { originalContent: { default: "" } },
+    content: "none",
+  },
+  {
+    render: ({ block, editor }) => (
+      <HiddenBlockView block={block} editor={editor} />
+    ),
+  },
+);
+
 // --- Schema ---
 
 const schema = BlockNoteSchema.create().extend({
@@ -122,6 +157,8 @@ const schema = BlockNoteSchema.create().extend({
     }),
     // PageLinkBlock is a factory — invoke it to produce the BlockSpec
     page: PageLinkBlock(),
+    // HiddenBlock stores original block JSON and renders a clickable restore toggle
+    hidden: HiddenBlock(),
   },
 });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { Check, EyeOff, Highlighter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -19,10 +19,8 @@ export const ProcessingControls = ({
   onHide,
   onExit,
 }: ProcessingControlsProps) => {
-  const panelRef = useRef<HTMLDivElement>(null);
-
   // --- Overlay (block highlight) ---
-  // Rendered as a React-owned fixed div — immune to ProseMirror DOM re-renders.
+  // React-owned fixed div — immune to ProseMirror DOM re-renders.
   const [overlayStyle, setOverlayStyle] = useState<React.CSSProperties>({
     display: "none",
   });
@@ -41,7 +39,7 @@ export const ProcessingControls = ({
       top: r.top,
       left: r.left,
       width: r.width,
-      height: Math.max(r.height, 24), // minimum visible height
+      height: Math.max(r.height, 24),
     });
   }, [blockId]);
 
@@ -51,7 +49,7 @@ export const ProcessingControls = ({
     return () => cancelAnimationFrame(raf);
   }, [blockId, updateOverlay]);
 
-  // Track scrolling so the overlay follows the block
+  // Keep overlay in sync while scrolling / resizing
   useEffect(() => {
     const scroller = window.document.querySelector("main");
     scroller?.addEventListener("scroll", updateOverlay, { passive: true });
@@ -61,31 +59,6 @@ export const ProcessingControls = ({
       window.removeEventListener("resize", updateOverlay);
     };
   }, [updateOverlay]);
-
-  // --- Panel (fixed center, doesn't follow blocks) ---
-  const repositionPanel = useCallback(() => {
-    const panel = panelRef.current;
-    if (!panel) return;
-    const panelW = panel.offsetWidth || 112;
-    const panelH = panel.offsetHeight || 176;
-    const anyBlock = window.document.querySelector("[data-id]");
-    const left = anyBlock
-      ? Math.max(4, anyBlock.getBoundingClientRect().left - panelW - 8)
-      : 8;
-    const top = Math.max(56, (window.innerHeight - panelH) / 2);
-    panel.style.left = `${left}px`;
-    panel.style.top = `${top}px`;
-  }, []);
-
-  useEffect(() => {
-    const raf = requestAnimationFrame(repositionPanel);
-    return () => cancelAnimationFrame(raf);
-  }, [repositionPanel]);
-
-  useEffect(() => {
-    window.addEventListener("resize", repositionPanel);
-    return () => window.removeEventListener("resize", repositionPanel);
-  }, [repositionPanel]);
 
   // --- Keyboard shortcuts ---
   // Left=hide, down=keep, right=highlight, esc=stop
@@ -118,56 +91,58 @@ export const ProcessingControls = ({
 
   return (
     <>
-      {/* Block highlight overlay — React-managed, never mutates BlockNote DOM */}
+      {/* Block highlight overlay */}
       <div style={overlayStyle} className="processing-active-block" />
 
-      {/* Action panel — stays at vertical center of viewport */}
-      <div
-        ref={panelRef}
-        style={{ position: "fixed", top: 0, left: 0 }}
-        className="z-50 flex flex-col gap-0.5 rounded-lg border border-border bg-background p-1 shadow-md"
-      >
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onHighlight}
-          className="h-8 justify-start gap-x-1.5 px-2 text-xs"
-        >
-          <Highlighter className="h-3.5 w-3.5 shrink-0" />
-          <span>Highlight</span>
-          <kbd className="ml-auto font-mono text-[10px] text-muted-foreground">→</kbd>
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onKeep}
-          className="h-8 justify-start gap-x-1.5 px-2 text-xs"
-        >
-          <Check className="h-3.5 w-3.5 shrink-0" />
-          <span>Keep</span>
-          <kbd className="ml-auto font-mono text-[10px] text-muted-foreground">↓</kbd>
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onHide}
-          className="h-8 justify-start gap-x-1.5 px-2 text-xs"
-        >
-          <EyeOff className="h-3.5 w-3.5 shrink-0" />
-          <span>Hide</span>
-          <kbd className="ml-auto font-mono text-[10px] text-muted-foreground">←</kbd>
-        </Button>
-        <div className="my-0.5 h-px bg-border" />
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onExit}
-          className="h-8 justify-start gap-x-1.5 px-2 text-xs text-muted-foreground"
-        >
-          <X className="h-3.5 w-3.5 shrink-0" />
-          <span>Stop</span>
-          <kbd className="ml-auto font-mono text-[10px] text-muted-foreground">Esc</kbd>
-        </Button>
+      {/* Action bar — fixed at bottom-center, never moves */}
+      <div className="fixed bottom-10 left-1/2 z-[350] flex -translate-x-1/2 items-stretch rounded-xl border border-border bg-background shadow-xl">
+        {/* Three primary action buttons */}
+        <div className="flex gap-1 p-2">
+          {/* Order matches arrow keys: ← Hide | ↓ Keep | → Highlight */}
+          <Button
+            variant="ghost"
+            onClick={onHide}
+            className="flex h-24 w-28 flex-col items-center justify-center gap-2 rounded-lg px-2"
+          >
+            <EyeOff className="h-6 w-6 shrink-0" />
+            <span className="text-xs font-medium leading-none">Hide</span>
+            <kbd className="font-mono text-[10px] leading-none text-muted-foreground">←</kbd>
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={onKeep}
+            className="flex h-24 w-28 flex-col items-center justify-center gap-2 rounded-lg px-2"
+          >
+            <Check className="h-6 w-6 shrink-0" />
+            <span className="text-xs font-medium leading-none">Keep</span>
+            <kbd className="font-mono text-[10px] leading-none text-muted-foreground">↓</kbd>
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={onHighlight}
+            className="flex h-24 w-28 flex-col items-center justify-center gap-2 rounded-lg px-2"
+          >
+            <Highlighter className="h-6 w-6 shrink-0" />
+            <span className="text-xs font-medium leading-none">Highlight</span>
+            <kbd className="font-mono text-[10px] leading-none text-muted-foreground">→</kbd>
+          </Button>
+        </div>
+
+        {/* Vertical divider */}
+        <div className="my-3 w-px bg-border" />
+
+        {/* Stop button */}
+        <div className="flex items-center px-2">
+          <Button
+            variant="ghost"
+            onClick={onExit}
+            className="flex h-14 w-16 flex-col items-center justify-center gap-1.5 rounded-lg text-muted-foreground"
+          >
+            <X className="h-5 w-5 shrink-0" />
+            <span className="text-[11px] font-medium leading-none">Stop</span>
+            <kbd className="font-mono text-[9px] leading-none">Esc</kbd>
+          </Button>
+        </div>
       </div>
     </>
   );

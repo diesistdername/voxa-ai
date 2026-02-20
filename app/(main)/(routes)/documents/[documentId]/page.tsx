@@ -70,6 +70,9 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
     });
   }, []);
 
+  const isEligible = (block: { type: string }) =>
+    block.type !== "page" && block.type !== "hidden";
+
   const startProcessing = useCallback(() => {
     const editor = editorRef.current;
     if (!editor) return;
@@ -77,7 +80,7 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let firstBlock: any = null;
     editor.forEachBlock((block) => {
-      if (block.type !== "page") {
+      if (isEligible(block)) {
         firstBlock = block;
         return false; // halt at first eligible block
       }
@@ -103,7 +106,7 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
     let nextBlock: any = null;
 
     editor.forEachBlock((block) => {
-      if (found && block.type !== "page") {
+      if (found && isEligible(block)) {
         nextBlock = block;
         return false; // stop at first eligible block after current
       }
@@ -152,29 +155,36 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
     const editor = editorRef.current;
     if (!editor || !currentBlockId) return;
 
-    // Find the next eligible block BEFORE deleting (document state is still intact).
-    // After removal the block that was at N+1 takes the current slot — advance there.
+    // Capture current block content + find next eligible block before replacing.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let currentBlock: any = null;
     let found = false;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let nextBlock: any = null;
     editor.forEachBlock((block) => {
-      if (found && block.type !== "page") {
+      if (block.id === currentBlockId) {
+        currentBlock = block;
+        found = true;
+      } else if (found && isEligible(block)) {
         nextBlock = block;
         return false;
       }
-      if (block.id === currentBlockId) found = true;
       return true;
     });
 
-    // Delete the block. BlockNote uses ProseMirror history, so Cmd/Ctrl+Z undoes it.
+    if (!currentBlock) return;
+
+    // Replace with a hidden toggle block. Cmd/Ctrl+Z undoes this via ProseMirror history.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (editor as any).removeBlocks([currentBlockId]);
+    (editor as any).replaceBlocks(
+      [currentBlockId],
+      [{ type: "hidden", props: { originalContent: JSON.stringify(currentBlock) } }],
+    );
 
     if (nextBlock) {
       setCurrentBlockId(nextBlock.id);
       scrollToBlock(nextBlock.id);
     } else {
-      // Deleted the last eligible block — processing complete.
       setCurrentBlockId(null);
       setActive(false);
       toast.success("All done!", {
