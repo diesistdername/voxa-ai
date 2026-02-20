@@ -4,14 +4,14 @@ import { useScrollTop } from "@/hooks/useScrollTop";
 import { cn } from "@/lib/utils";
 import { Logo } from "./Logo";
 import { ModeToggle } from "@/components/mode-toggle";
-import { useConvexAuth } from "convex/react";
+import { useAuth } from "@clerk/nextjs";
 import { SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/spinner";
 import Link from "next/link";
 
 export const Navbar = () => {
-  const { isAuthenticated, isLoading } = useConvexAuth();
+  const { isSignedIn, isLoaded } = useAuth();
   const scrolled = useScrollTop();
 
   return (
@@ -24,8 +24,8 @@ export const Navbar = () => {
       <Logo />
       <div className="flex w-full items-center justify-end md:ml-auto">
         <div className="flex items-center gap-x-2">
-          {isLoading && <Spinner />}
-          {!isLoading && !isAuthenticated && (
+          {!isLoaded && <Spinner />}
+          {isLoaded && !isSignedIn && (
             <>
               <SignInButton mode="modal">
                 <Button variant="ghost" size="sm">
@@ -38,7 +38,7 @@ export const Navbar = () => {
             </>
           )}
 
-          {isAuthenticated && !isLoading && (
+          {isLoaded && isSignedIn && (
             <>
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/documents"> Enter Zotion </Link>

@@ -9,8 +9,12 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
+  // Allow access to protected routes if user is authenticated with Clerk
+  // Convex auth will be checked in the component layer
   if (!isPublicRoute(request)) {
-    await auth.protect();
+    await auth.protect({
+      unauthenticatedUrl: "/",
+    });
   }
 });
 
