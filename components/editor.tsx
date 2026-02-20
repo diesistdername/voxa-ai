@@ -208,7 +208,7 @@ const Editor = ({
   const prevPageIdsRef = useRef<Set<string>>(initPageIds(initialContent));
 
   const handleUpload = async (file: File) => {
-    const res = await edgestore.publicFiles.upload({ file });
+    const res = await edgestore.publicFiles.upload({ file, input: {} });
     return res.url;
   };
 
