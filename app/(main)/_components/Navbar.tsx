@@ -3,8 +3,10 @@
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
-import { MenuIcon } from "lucide-react";
+import { MenuIcon, Play } from "lucide-react";
 import { useParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { useProcessingMode } from "@/hooks/useProcessingMode";
 import { Menu } from "./Menu";
 
 interface NavbarProps {
@@ -17,6 +19,7 @@ export const Navbar = ({ isCollapsed, onResetWidth }: NavbarProps) => {
   const document = useQuery(api.documents.getById, {
     documentId: params.documentId as Id<"documents">,
   });
+  const { isActive, requestStart } = useProcessingMode();
 
   if (document === undefined) {
     return (
@@ -44,6 +47,21 @@ export const Navbar = ({ isCollapsed, onResetWidth }: NavbarProps) => {
         </button>
       )}
       <div className="ml-auto flex items-center gap-x-2">
+        {isActive ? (
+          <span className="text-xs font-medium text-muted-foreground">
+            Processing…
+          </span>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={requestStart}
+            className="h-7 gap-1.5 text-xs"
+          >
+            <Play className="h-3 w-3" />
+            Process
+          </Button>
+        )}
         <Menu documentId={document._id} />
       </div>
     </nav>
