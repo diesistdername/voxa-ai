@@ -3,7 +3,7 @@
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
-import { ChevronsUpDown, MenuIcon, Play } from "lucide-react";
+import { MenuIcon, Play, X } from "lucide-react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useProcessingMode } from "@/hooks/useProcessingMode";
@@ -19,7 +19,7 @@ export const Navbar = ({ isCollapsed, onResetWidth }: NavbarProps) => {
   const document = useQuery(api.documents.getById, {
     documentId: params.documentId as Id<"documents">,
   });
-  const { isActive, requestStart, requestUntoggleAll } = useProcessingMode();
+  const { isActive, requestStart, requestCancel } = useProcessingMode();
 
   if (document === undefined) {
     return (
@@ -49,31 +49,25 @@ export const Navbar = ({ isCollapsed, onResetWidth }: NavbarProps) => {
 
       {/* Left side: processing controls */}
       {isActive ? (
-        <span className="text-xs font-medium text-muted-foreground">
-          Processing…
-        </span>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={requestCancel}
+          className="h-7 gap-1.5 text-xs"
+        >
+          <X className="h-3 w-3" />
+          Cancel processing
+        </Button>
       ) : (
-        <>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={requestStart}
-            className="h-7 gap-1.5 text-xs"
-          >
-            <Play className="h-3 w-3" />
-            Process
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={requestUntoggleAll}
-            className="h-7 gap-1.5 text-xs text-muted-foreground"
-            title="Restore all hidden blocks"
-          >
-            <ChevronsUpDown className="h-3 w-3" />
-            Untoggle all
-          </Button>
-        </>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={requestStart}
+          className="h-7 gap-1.5 text-xs"
+        >
+          <Play className="h-3 w-3" />
+          Process
+        </Button>
       )}
 
       {/* Right side: document menu */}

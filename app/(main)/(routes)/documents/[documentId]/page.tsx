@@ -48,8 +48,8 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
     setActive,
     setCurrentBlockId,
     clearStartRequest,
-    untoggleAllRequested,
-    clearUntoggleAllRequest,
+    cancelRequested,
+    clearCancelRequest,
   } = useProcessingMode();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -287,10 +287,54 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
     }
   }, [currentBlockId, extraSelectedIds, setCurrentBlockId, scrollToBlock]);
 
-  const handleExit = useCallback(() => {
+  const handleCancel = useCallback(() => {
+    const editor = editorRef.current;
+    if (editor) {
+      // 1. Restore all hidden blocks
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const hiddenBlocks: any[] = [];
+      editor.forEachBlock((block) => {
+        if (block.type === "hidden") hiddenBlocks.push(block);
+        return true;
+      });
+      for (const hidden of hiddenBlocks) {
+        try {
+          const parsed = JSON.parse(hidden.props.originalContent || "[]");
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const originals: any[] = Array.isArray(parsed) ? parsed : [parsed];
+          if (originals.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (editor as any).replaceBlocks([hidden.id], originals);
+          } else {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (editor as any).removeBlocks([hidden.id]);
+          }
+        } catch {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (editor as any).removeBlocks([hidden.id]);
+        }
+      }
+
+      // 2. Strip all highlights
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const highlightedIds: string[] = [];
+      editor.forEachBlock((block) => {
+        if (block.props?.backgroundColor === HIGHLIGHT_BG_VALUE) {
+          highlightedIds.push(block.id);
+        }
+        return true;
+      });
+      for (const id of highlightedIds) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (editor as any).updateBlock(id, { props: { backgroundColor: "default" } });
+      }
+    }
+
+    // 3. Exit processing mode
     setCurrentBlockId(null);
     setActive(false);
     setExtraSelectedIds([]);
+    setShowDoneDialog(false);
   }, [setActive, setCurrentBlockId]);
 
   const handleAddSelection = useCallback(() => {
@@ -320,44 +364,13 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
     // If no next block, stay on current (can't advance past end)
   }, [currentBlockId, setCurrentBlockId, scrollToBlock]);
 
-  const handleUntoggleAll = useCallback(() => {
-    const editor = editorRef.current;
-    if (!editor) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const hiddenBlocks: any[] = [];
-    editor.forEachBlock((block) => {
-      if (block.type === "hidden") hiddenBlocks.push(block);
-      return true;
-    });
-    for (const hidden of hiddenBlocks) {
-      try {
-        const parsed = JSON.parse(hidden.props.originalContent || "[]");
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const originals: any[] = Array.isArray(parsed) ? parsed : [parsed];
-        if (originals.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (editor as any).replaceBlocks([hidden.id], originals);
-        } else {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (editor as any).removeBlocks([hidden.id]);
-        }
-      } catch {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (editor as any).removeBlocks([hidden.id]);
-      }
-    }
-  }, []);
-
-  // Listen for untoggle-all request fired from the Navbar button
+  // Listen for cancel request fired from the Navbar button
   useEffect(() => {
-    if (!untoggleAllRequested) return;
-    clearUntoggleAllRequest();
-    handleUntoggleAll();
-  }, [untoggleAllRequested, clearUntoggleAllRequest, handleUntoggleAll]);
+    if (!cancelRequested) return;
+    clearCancelRequest();
+    handleCancel();
+  }, [cancelRequested, clearCancelRequest, handleCancel]);
 
-  const handleDismissDone = useCallback(() => {
-    setShowDoneDialog(false);
-  }, []);
 
   // Recursively strip block IDs so BlockNote assigns fresh ones on insert
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -367,65 +380,79 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
     return { ...rest, children: (block.children ?? []).map(stripIds) };
   };
 
-  const handleCollectBlocks = useCallback(() => {
+  const handleCollectBlocks = useCallback(async () => {
     const editor = editorRef.current;
     if (!editor) { setShowDoneDialog(false); return; }
 
-    // Collect all visible (non-hidden) blocks with fresh IDs
+    // --- Summary blocks: only visible (non-hidden) blocks, fresh IDs ---
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const visibleBlocks: any[] = [];
+    const summaryBlocks: any[] = [];
     editor.forEachBlock((block) => {
-      if (block.type !== "hidden") visibleBlocks.push(stripIds(block));
+      if (block.type !== "hidden") summaryBlocks.push(stripIds(block));
       return true;
     });
 
-    let summaryHeadingId: string | null = null;
+    // --- Raw blocks: all original content in document order, highlights stripped ---
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const stripHighlight = (block: any): any => {
+      const s = stripIds(block);
+      if (s.props?.backgroundColor && s.props.backgroundColor !== "default") {
+        s.props = { ...s.props, backgroundColor: "default" };
+      }
+      return s;
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rawBlocks: any[] = [];
+    editor.forEachBlock((block) => {
+      if (block.type === "hidden") {
+        try {
+          const parsed = JSON.parse(block.props.originalContent || "[]");
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const originals: any[] = Array.isArray(parsed) ? parsed : [parsed];
+          rawBlocks.push(...originals.map(stripHighlight));
+        } catch { /* skip malformed */ }
+      } else {
+        rawBlocks.push(stripHighlight(block));
+      }
+      return true;
+    });
 
-    if (visibleBlocks.length > 0) {
+    // 3. Create sub-pages and fill with content (await so data is safe before clearing)
+    const [rawId, summaryId] = await Promise.all([
+      create({ title: "Raw", parentDocument: documentId }),
+      create({ title: "Summary", parentDocument: documentId }),
+    ]);
+    await Promise.all([
+      rawBlocks.length > 0
+        ? update({ id: rawId, content: JSON.stringify(rawBlocks) })
+        : Promise.resolve(),
+      summaryBlocks.length > 0
+        ? update({ id: summaryId, content: JSON.stringify(summaryBlocks) })
+        : Promise.resolve(),
+    ]);
+
+    // 4. Replace current page content with two page-link blocks.
+    //    Collect all block IDs, replace the first with the two links, remove the rest.
+    const allIds: string[] = [];
+    editor.forEachBlock((block) => { allIds.push(block.id); return true; });
+    const [firstId, ...restIds] = allIds;
+    if (firstId) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let lastBlock: any = null;
-      editor.forEachBlock((block) => { lastBlock = block; return true; });
-      if (lastBlock) {
-        const emptyParagraph = () => ({
-          type: "paragraph",
-          props: {},
-          content: [],
-          children: [],
-        });
-        // Assign a known ID so we can scroll to it after the DOM updates
-        summaryHeadingId = `summary-heading-${Date.now()}`;
-        const summaryHeading = {
-          id: summaryHeadingId,
-          type: "heading",
-          props: { level: 1 },
-          content: [{ type: "text", text: "Summary", styles: {} }],
-          children: [],
-        };
+      (editor as any).replaceBlocks(
+        [firstId],
+        [
+          { type: "page", props: { pageId: rawId } },
+          { type: "page", props: { pageId: summaryId } },
+        ],
+      );
+      if (restIds.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (editor as any).insertBlocks(
-          [emptyParagraph(), emptyParagraph(), emptyParagraph(), summaryHeading, ...visibleBlocks],
-          lastBlock,
-          "after",
-        );
+        (editor as any).removeBlocks(restIds);
       }
     }
 
-    // Untoggle all hidden blocks now that the summary is in place
-    handleUntoggleAll();
-
     setShowDoneDialog(false);
-
-    // After two animation frames (DOM has settled), scroll Summary heading to top
-    if (summaryHeadingId) {
-      const targetId = summaryHeadingId;
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          const el = window.document.querySelector(`[data-id="${targetId}"]`);
-          el?.scrollIntoView({ behavior: "smooth", block: "start" });
-        });
-      });
-    }
-  }, [handleUntoggleAll]);
+  }, [create, update, documentId]);
 
   // --- Convex handlers ---
   const onChange = (content: string) => {
@@ -476,14 +503,14 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
           onHighlight={handleHighlight}
           onHide={handleHide}
           onPrevious={handlePrevious}
-          onExit={handleExit}
+          onExit={handleCancel}
           onAddSelection={handleAddSelection}
         />
       )}
       {showDoneDialog && (
         <ProcessingDoneDialog
           onCollect={handleCollectBlocks}
-          onDismiss={handleDismissDone}
+          onDismiss={handleCancel}
         />
       )}
     </div>

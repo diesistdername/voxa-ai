@@ -40,11 +40,32 @@ export const Toolbar = ({ initialData, preview }: ToolbarProps) => {
     return () => clearTimeout(timer);
   }, [value, initialData._id, initialData.title, update]);
 
+  const focusEditor = () => {
+    requestAnimationFrame(() => {
+      const el = document.querySelector(
+        ".bn-editor [contenteditable='true']",
+      ) as HTMLElement | null;
+      el?.focus();
+    });
+  };
+
   const onKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter") {
       event.preventDefault();
       update({ id: initialData._id, title: value || "Untitled" });
-      setTimeout(() => inputRef.current?.blur(), 400);
+      disableInput();
+      focusEditor();
+    } else if (event.key === "ArrowDown") {
+      event.preventDefault();
+      disableInput();
+      focusEditor();
+    } else if (event.key === "ArrowRight") {
+      const atEnd = event.currentTarget.selectionStart === value.length;
+      if (atEnd) {
+        event.preventDefault();
+        disableInput();
+        focusEditor();
+      }
     }
   };
 

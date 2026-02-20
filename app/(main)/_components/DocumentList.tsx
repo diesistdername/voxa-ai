@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -42,6 +42,35 @@ export const DocumentList = ({ search = "" }: DocumentListProps) => {
   const archive = useMutation(api.documents.archive);
 
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  // Auto-expand the active document and all its ancestors so sub-pages are
+  // always visible in the sidebar without requiring manual chevron clicks.
+  useEffect(() => {
+    if (!documents) return;
+    const id = params.documentId as string | undefined;
+    if (!id) return;
+
+    const parentOf = new Map<string, string>();
+    for (const doc of documents) {
+      if (doc.parentDocument) parentOf.set(doc._id, doc.parentDocument);
+    }
+
+    const toExpand = new Set<string>();
+    let cur: string | undefined = id;
+    while (cur) {
+      toExpand.add(cur);
+      cur = parentOf.get(cur);
+    }
+
+    setExpanded((prev) => {
+      let changed = false;
+      const next = new Set(prev);
+      for (const expandId of toExpand) {
+        if (!next.has(expandId)) { next.add(expandId); changed = true; }
+      }
+      return changed ? next : prev;
+    });
+  }, [params.documentId, documents]);
 
   const childrenMap = useMemo(() => {
     const map = new Map<string, Doc<"documents">[]>();
@@ -104,7 +133,9 @@ export const DocumentList = ({ search = "" }: DocumentListProps) => {
   const renderNode = (doc: Doc<"documents">, level: number) => {
     const isActive = params.documentId === doc._id;
     const isExpanded = expanded.has(doc._id);
-    const children = childrenMap.get(doc._id) ?? [];
+    const children = (childrenMap.get(doc._id) ?? [])
+      .slice()
+      .sort((a, b) => a._creationTime - b._creationTime);
     const hasChildren = children.length > 0;
 
     return (
