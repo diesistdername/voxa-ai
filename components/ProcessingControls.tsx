@@ -91,10 +91,8 @@ export const ProcessingControls = ({
       <Button
         variant="ghost"
         size="sm"
-        disabled
-        title="Coming in next step"
-        className="h-8 justify-start px-2 text-xs"
         onClick={onHide}
+        className="h-8 justify-start px-2 text-xs"
       >
         <EyeOff className="mr-1.5 h-3.5 w-3.5" />
         Hide

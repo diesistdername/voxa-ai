@@ -149,8 +149,39 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
   }, [currentBlockId, advanceProcessing]);
 
   const handleHide = useCallback(() => {
-    // Step 3 — no-op for now
-  }, []);
+    const editor = editorRef.current;
+    if (!editor || !currentBlockId) return;
+
+    // Find the next eligible block BEFORE deleting (document state is still intact).
+    // After removal the block that was at N+1 takes the current slot — advance there.
+    let found = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let nextBlock: any = null;
+    editor.forEachBlock((block) => {
+      if (found && block.type !== "page") {
+        nextBlock = block;
+        return false;
+      }
+      if (block.id === currentBlockId) found = true;
+      return true;
+    });
+
+    // Delete the block. BlockNote uses ProseMirror history, so Cmd/Ctrl+Z undoes it.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (editor as any).removeBlocks([currentBlockId]);
+
+    if (nextBlock) {
+      setCurrentBlockId(nextBlock.id);
+      scrollToBlock(nextBlock.id);
+    } else {
+      // Deleted the last eligible block — processing complete.
+      setCurrentBlockId(null);
+      setActive(false);
+      toast.success("All done!", {
+        description: "You've reviewed all blocks in this document.",
+      });
+    }
+  }, [currentBlockId, setActive, setCurrentBlockId, scrollToBlock]);
 
   const handleExit = useCallback(() => {
     setCurrentBlockId(null);
