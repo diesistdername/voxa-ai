@@ -8,11 +8,20 @@ import {
 } from "@blocknote/core";
 import {
   useCreateBlockNote,
+  useBlockNoteEditor,
+  useExtensionState,
   SuggestionMenuController,
+  SideMenuController,
+  SideMenu,
+  DragHandleMenu,
+  BlockColorsItem,
+  RemoveBlockItem,
   getDefaultReactSlashMenuItems,
   createReactBlockSpec,
   DefaultReactSuggestionItem,
 } from "@blocknote/react";
+import { SideMenuExtension } from "@blocknote/core/extensions";
+import { Menu } from "@mantine/core";
 import { BlockNoteView } from "@blocknote/mantine";
 import { useTheme } from "next-themes";
 import { useEdgeStore } from "@/lib/edgestore";
@@ -22,7 +31,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useRouter } from "next/navigation";
-import { useRef, useEffect } from "react";
+import React, { useRef, useEffect } from "react";
 import "@blocknote/core/style.css";
 import "@blocknote/mantine/style.css";
 
@@ -154,6 +163,65 @@ const HiddenBlock = createReactBlockSpec(
   },
 );
 
+// --- Block type conversion (Turn into) ---
+
+const TURN_INTO_ITEMS = [
+  { type: "paragraph", label: "Text" },
+  { type: "heading", label: "Heading 1", level: 1 },
+  { type: "heading", label: "Heading 2", level: 2 },
+  { type: "heading", label: "Heading 3", level: 3 },
+  { type: "bulletListItem", label: "Bullet list" },
+  { type: "numberedListItem", label: "Numbered list" },
+  { type: "checkListItem", label: "To-do" },
+  { type: "quote", label: "Quote" },
+] as const;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const CustomDragHandleMenu = (props: { children?: React.ReactNode }) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const editor = useBlockNoteEditor<any, any, any>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const block = useExtensionState(SideMenuExtension as any, {
+    editor,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    selector: (state: any) => state?.block,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  }) as any;
+
+  if (!block?.type) {
+    return <DragHandleMenu>{props.children}</DragHandleMenu>;
+  }
+
+  const canConvert = !["page", "hidden", "codeBlock"].includes(block.type);
+  return (
+    <DragHandleMenu>
+      {canConvert && (
+        <>
+          <Menu.Label>Turn into</Menu.Label>
+          {TURN_INTO_ITEMS.map((item) => (
+            <Menu.Item
+              key={`${item.type}-${"level" in item ? item.level : ""}`}
+              onClick={() =>
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (editor as any).updateBlock(block, {
+                  type: item.type,
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  props: "level" in item ? { level: (item as any).level } : {},
+                })
+              }
+            >
+              {item.label}
+            </Menu.Item>
+          ))}
+          <Menu.Divider />
+        </>
+      )}
+      <BlockColorsItem>Colors</BlockColorsItem>
+      <RemoveBlockItem>Delete</RemoveBlockItem>
+    </DragHandleMenu>
+  );
+};
+
 // --- Schema ---
 
 const schema = BlockNoteSchema.create().extend({
@@ -276,10 +344,14 @@ const Editor = ({
       theme={resolvedTheme === "dark" ? "dark" : "light"}
       onChange={handleEditorChange}
       slashMenu={false}
+      sideMenu={false}
     >
       <SuggestionMenuController
         triggerCharacter="/"
         getItems={getSlashMenuItems}
+      />
+      <SideMenuController
+        sideMenu={() => <SideMenu dragHandleMenu={CustomDragHandleMenu} />}
       />
     </BlockNoteView>
   );

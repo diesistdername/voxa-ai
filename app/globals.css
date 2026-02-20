@@ -156,9 +156,11 @@
     top: -110px !important;
   }
 
-  /* BlockNote editor: inherit app background so dark mode matches */
+  /* BlockNote editor: inherit app background; strip internal side padding so
+     the editor text aligns with the page title above it */
   .bn-editor {
     background-color: transparent !important;
+    padding-inline: 0 !important;
   }
 
   /* Processing Mode — current block overlay (rendered as a React div, not on BlockNote DOM) */

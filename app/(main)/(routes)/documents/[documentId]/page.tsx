@@ -470,7 +470,7 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
   // --- Render ---
   if (doc === undefined) {
     return (
-      <div className="w-full max-w-5xl pl-16 pr-12 pt-10 pb-40">
+      <div className="w-full max-w-5xl pl-24 pr-16 pt-10 pb-40">
         <div className="space-y-4">
           <Skeleton className="h-10 w-1/2" />
           <Skeleton className="h-4 w-4/5" />
@@ -486,7 +486,7 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
   }
 
   return (
-    <div className="w-full max-w-5xl pl-16 pr-12 pt-10 pb-40">
+    <div className="w-full max-w-5xl pl-24 pr-16 pt-10 pb-40">
       <Toolbar initialData={doc} />
       <Editor
         onChange={onChange}
