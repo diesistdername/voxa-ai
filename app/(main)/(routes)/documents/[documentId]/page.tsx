@@ -29,12 +29,22 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
   });
 
   const update = useMutation(api.documents.update);
+  const create = useMutation(api.documents.create);
+  const archive = useMutation(api.documents.archive);
 
   const onChange = (content: string) => {
-    update({
-      id: documentId,
-      content,
-    });
+    update({ id: documentId, content });
+  };
+
+  // Creates a child document and returns its ID.
+  // The editor inserts a page block at the cursor position.
+  const onCreatePage = async (title: string): Promise<string> => {
+    return await create({ title, parentDocument: documentId });
+  };
+
+  // Archives a child document when its page block is deleted from the editor.
+  const onArchivePage = (pageId: string) => {
+    archive({ id: pageId as Id<"documents"> });
   };
 
   if (document === undefined) {
@@ -57,8 +67,14 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
   return (
     <div className="w-full max-w-5xl pl-16 pr-12 pt-10 pb-40">
       <Toolbar initialData={document} />
-      <Editor onChange={onChange} initialContent={document.content} />
+      <Editor
+        onChange={onChange}
+        initialContent={document.content}
+        onCreatePage={onCreatePage}
+        onArchivePage={onArchivePage}
+      />
     </div>
   );
 };
+
 export default DocumentIdPage;

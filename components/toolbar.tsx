@@ -24,7 +24,11 @@ export const Toolbar = ({ initialData, preview }: ToolbarProps) => {
     if (!isEditing) {
       setValue(initialData.title);
     }
-  }, [initialData.title, isEditing]);
+    // Only sync from external changes (initialData.title), not on isEditing toggle.
+    // Removing isEditing from deps prevents the blur handler from resetting
+    // the local value before the debounced Convex mutation fires.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialData.title]);
 
   useEffect(() => {
     if (value === initialData.title) return;
