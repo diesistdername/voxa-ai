@@ -160,6 +160,16 @@
   .bn-editor {
     background-color: transparent !important;
   }
+
+  /* Processing Mode — block-level highlight (backgroundColor prop: "yellow") */
+  [data-background-color="yellow"] {
+    background-color: oklch(0.97 0.05 90) !important;
+    border-radius: 4px;
+  }
+
+  .dark [data-background-color="yellow"] {
+    background-color: oklch(0.26 0.04 90) !important;
+  }
 }
 
 @layer base {

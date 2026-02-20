@@ -4,6 +4,7 @@ import {
   PartialBlock,
   createCodeBlockSpec,
   BlockNoteSchema,
+  BlockNoteEditor,
 } from "@blocknote/core";
 import {
   useCreateBlockNote,
@@ -21,7 +22,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useRouter } from "next/navigation";
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import "@blocknote/core/style.css";
 import "@blocknote/mantine/style.css";
 
@@ -132,6 +133,8 @@ interface EditorProps {
   editable?: boolean;
   onCreatePage?: (title: string) => Promise<string>;
   onArchivePage?: (pageId: string) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onEditorReady?: (editor: BlockNoteEditor<any, any, any>) => void;
 }
 
 const Editor = ({
@@ -140,6 +143,7 @@ const Editor = ({
   editable,
   onCreatePage,
   onArchivePage,
+  onEditorReady,
 }: EditorProps) => {
   const { resolvedTheme } = useTheme();
   const { edgestore } = useEdgeStore();
@@ -159,6 +163,11 @@ const Editor = ({
     uploadFile: handleUpload,
     schema,
   });
+
+  useEffect(() => {
+    onEditorReady?.(editor);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // fire once after mount — editor ref is stable
 
   const handleEditorChange = () => {
     onChange(JSON.stringify(editor.document, null, 2));
