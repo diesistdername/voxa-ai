@@ -3,7 +3,7 @@
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
-import { MenuIcon, Play } from "lucide-react";
+import { ChevronsUpDown, MenuIcon, Play } from "lucide-react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useProcessingMode } from "@/hooks/useProcessingMode";
@@ -19,7 +19,7 @@ export const Navbar = ({ isCollapsed, onResetWidth }: NavbarProps) => {
   const document = useQuery(api.documents.getById, {
     documentId: params.documentId as Id<"documents">,
   });
-  const { isActive, requestStart } = useProcessingMode();
+  const { isActive, requestStart, requestUntoggleAll } = useProcessingMode();
 
   if (document === undefined) {
     return (
@@ -46,12 +46,14 @@ export const Navbar = ({ isCollapsed, onResetWidth }: NavbarProps) => {
           <MenuIcon className="text-muted-foreground h-6 w-6" />
         </button>
       )}
-      <div className="ml-auto flex items-center gap-x-2">
-        {isActive ? (
-          <span className="text-xs font-medium text-muted-foreground">
-            Processing…
-          </span>
-        ) : (
+
+      {/* Left side: processing controls */}
+      {isActive ? (
+        <span className="text-xs font-medium text-muted-foreground">
+          Processing…
+        </span>
+      ) : (
+        <>
           <Button
             size="sm"
             variant="outline"
@@ -61,7 +63,21 @@ export const Navbar = ({ isCollapsed, onResetWidth }: NavbarProps) => {
             <Play className="h-3 w-3" />
             Process
           </Button>
-        )}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={requestUntoggleAll}
+            className="h-7 gap-1.5 text-xs text-muted-foreground"
+            title="Restore all hidden blocks"
+          >
+            <ChevronsUpDown className="h-3 w-3" />
+            Untoggle all
+          </Button>
+        </>
+      )}
+
+      {/* Right side: document menu */}
+      <div className="ml-auto flex items-center gap-x-2">
         <Menu documentId={document._id} />
       </div>
     </nav>

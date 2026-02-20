@@ -17,6 +17,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { FileText, Plus, ChevronRight, MoreHorizontal, Trash2 } from "lucide-react";
 
+const formatDate = (ms: number): string => {
+  const d = new Date(ms);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (d.getFullYear() === now.getFullYear()) {
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
+
 interface DocumentListProps {
   search?: string;
 }
@@ -101,7 +114,7 @@ export const DocumentList = ({ search = "" }: DocumentListProps) => {
           role="button"
           style={{ paddingLeft: `${12 + level * 16}px` }}
           className={cn(
-            "group flex h-9 w-full cursor-pointer items-center gap-x-1 rounded-md pr-1 text-sm transition-colors duration-150",
+            "group flex min-h-9 w-full cursor-pointer items-center gap-x-1 rounded-md py-1.5 pr-1 text-sm transition-colors duration-150",
             isActive
               ? "bg-accent text-accent-foreground"
               : "text-foreground/80 hover:bg-accent hover:text-accent-foreground",
@@ -125,14 +138,19 @@ export const DocumentList = ({ search = "" }: DocumentListProps) => {
             />
           </button>
 
-          {/* Icon + title */}
+          {/* Icon + title + date */}
           <FileText
             className={cn(
               "h-4 w-4 shrink-0",
               isActive ? "text-accent-foreground" : "text-muted-foreground",
             )}
           />
-          <span className="truncate">{doc.title || "Untitled"}</span>
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <span className="truncate">{doc.title || "Untitled"}</span>
+            <span className="text-[10px] leading-none text-muted-foreground">
+              {formatDate(doc.updatedAt ?? doc._creationTime)}
+            </span>
+          </div>
 
           {/* Actions — visible on hover */}
           <div className="ml-auto flex items-center gap-x-0.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
@@ -209,7 +227,7 @@ export const DocumentList = ({ search = "" }: DocumentListProps) => {
               onClick={() => onClick(document._id)}
               role="button"
               className={cn(
-                "group flex h-9 w-full cursor-pointer items-center gap-x-2 rounded-md px-3 text-sm transition-colors duration-150",
+                "group flex min-h-9 w-full cursor-pointer items-center gap-x-2 rounded-md px-3 py-1.5 text-sm transition-colors duration-150",
                 isActive
                   ? "bg-accent text-accent-foreground"
                   : "text-foreground/80 hover:bg-accent hover:text-accent-foreground",
@@ -221,7 +239,12 @@ export const DocumentList = ({ search = "" }: DocumentListProps) => {
                   isActive ? "text-accent-foreground" : "text-muted-foreground",
                 )}
               />
-              <span className="truncate">{document.title || "Untitled"}</span>
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <span className="truncate">{document.title || "Untitled"}</span>
+                <span className="text-[10px] leading-none text-muted-foreground">
+                  {formatDate(document.updatedAt ?? document._creationTime)}
+                </span>
+              </div>
             </div>
           );
         })}

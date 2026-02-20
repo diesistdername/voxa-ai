@@ -9,6 +9,10 @@ interface ProcessingModeStore {
   clearStartRequest: () => void;
   setActive: (active: boolean) => void;
   setCurrentBlockId: (id: string | null) => void;
+  /** Set to true by Navbar; page.tsx reads and clears it to restore all hidden blocks. */
+  untoggleAllRequested: boolean;
+  requestUntoggleAll: () => void;
+  clearUntoggleAllRequest: () => void;
 }
 
 export const useProcessingMode = create<ProcessingModeStore>((set) => ({
@@ -19,4 +23,7 @@ export const useProcessingMode = create<ProcessingModeStore>((set) => ({
   clearStartRequest: () => set({ startRequested: false }),
   setActive: (active) => set({ isActive: active }),
   setCurrentBlockId: (id) => set({ currentBlockId: id }),
+  untoggleAllRequested: false,
+  requestUntoggleAll: () => set({ untoggleAllRequested: true }),
+  clearUntoggleAllRequest: () => set({ untoggleAllRequested: false }),
 }));

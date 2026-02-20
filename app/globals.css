@@ -173,6 +173,30 @@
     box-shadow: 0 0 0 2px oklch(0.55 0.18 240);
   }
 
+  /* Processing Mode — selected (Shift+Down) block overlay */
+  .processing-selected-block {
+    background-color: oklch(0.85 0.08 240 / 0.10) !important;
+    border-radius: 6px;
+    box-shadow: 0 0 0 1px oklch(0.55 0.18 240 / 0.45);
+  }
+
+  .dark .processing-selected-block {
+    background-color: oklch(0.60 0.12 240 / 0.13) !important;
+    box-shadow: 0 0 0 1px oklch(0.55 0.18 240 / 0.45);
+  }
+
+  /* Hidden blocks — collapse wrapper to zero height; toggle floats in the left gutter */
+  .bn-block-outer:has([data-hidden-block]) {
+    height: 0 !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .bn-block-outer:has([data-hidden-block]) > .bn-block {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
   /* Processing Mode — block-level highlight (backgroundColor prop: "yellow") */
   [data-background-color="yellow"] {
     background-color: oklch(0.97 0.05 90) !important;
