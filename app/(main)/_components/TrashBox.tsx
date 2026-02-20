@@ -1,16 +1,22 @@
 "use client";
 
-import { ActionTooltip } from "@/components/action-tooltip";
-import { ConfirmModal } from "@/components/modals/ConfirmModal";
-import { Spinner } from "@/components/spinner";
-import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useQuery, useMutation } from "convex/react";
+import { toast } from "sonner";
+import { Search, Trash2, Undo, Trash } from "lucide-react";
+
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
-import { Coffee, Search, Trash, Trash2, Undo } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
-import { toast } from "sonner";
+import { Spinner } from "@/components/spinner";
+import { Input } from "@/components/ui/input";
+import { ConfirmModal } from "@/components/modals/ConfirmModal";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export const TrashBox = () => {
   const router = useRouter();
@@ -22,150 +28,144 @@ export const TrashBox = () => {
 
   const [search, setSearch] = useState("");
 
-  const filteredDocuments = documents?.filter((document) => {
-    return document.title.toLowerCase().includes(search.toLowerCase());
-  });
+  const filtered = documents?.filter((d) =>
+    d.title.toLowerCase().includes(search.toLowerCase()),
+  );
 
   const onClick = (documentId: string) => {
     router.push(`/documents/${documentId}`);
   };
 
-  const onRestore = (
-    event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
-    documentId: Id<"documents">,
-  ) => {
-    event.stopPropagation();
-    const promise = restore({ id: documentId });
-
-    toast.promise(promise, {
-      loading: "Restoring note..",
-      success: "Note restored!",
+  const onRestore = (e: React.MouseEvent, documentId: Id<"documents">) => {
+    e.stopPropagation();
+    toast.promise(restore({ id: documentId }), {
+      loading: "Restoring note…",
+      success: "Note restored.",
       error: "Failed to restore note.",
     });
   };
 
   const onRemove = (documentId: Id<"documents">) => {
-    const promise = remove({ id: documentId });
-
-    toast.promise(promise, {
-      loading: "Deleting note..",
-      success: "Note deleted!",
+    toast.promise(remove({ id: documentId }), {
+      loading: "Deleting note…",
+      success: "Note deleted.",
       error: "Failed to delete note.",
     });
-
     if (params.documentId === documentId) {
       router.push("/documents");
     }
   };
 
   const onEmptyTrash = () => {
-    const promise = removeAll();
-
-    toast.promise(promise, {
-      loading: "Emptying trash..",
-      success: "Trash emptied!",
+    toast.promise(removeAll(), {
+      loading: "Emptying trash…",
+      success: "Trash emptied.",
       error: "Failed to empty trash.",
     });
-
     if (params.documentId) {
-      const isCurrentDocInTrash = documents?.some(
-        (doc) => doc._id === params.documentId,
-      );
-      if (isCurrentDocInTrash) {
-        router.push("/documents");
-      }
+      const isInTrash = documents?.some((d) => d._id === params.documentId);
+      if (isInTrash) router.push("/documents");
     }
   };
 
   if (documents === undefined) {
     return (
-      <div
-        className="flex h-full items-center justify-center p-4"
-        aria-busy="true"
-        aria-label="loading"
-      >
+      <div className="flex items-center justify-center p-6">
         <Spinner size="md" />
       </div>
     );
   }
 
   return (
-    <section className="text-sm">
-      <div className="flex items-center gap-x-1 p-2">
-        <Search className="h-4 w-4" />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="bg-secondary h-7 px-2 focus-visible:ring-transparent"
-          placeholder="Filter by page title..."
-          aria-label="Filter by page title"
-        />
-        {documents.length > 0 && (
-          <ConfirmModal onConfirm={onEmptyTrash}>
-            <div>
-              <ActionTooltip label="Empty trash">
-                <div
-                  role="button"
-                  className="rounded-sm p-2 hover:bg-neutral-200 dark:hover:bg-neutral-600"
-                >
-                  <Trash2 className="size-4 text-rose-500" />
-                </div>
-              </ActionTooltip>
-            </div>
-          </ConfirmModal>
-        )}
-      </div>
-
-      <div className="mt-2 px-1 pb-1">
-        {documents.length === 0 ? (
-          <p className="text-muted-foreground pb-2 text-center text-xs">
-            Trash is empty
-            <Coffee className="mb-1 ml-1 inline-block size-4" />
-          </p>
-        ) : (
-          filteredDocuments?.length === 0 && (
-            <p className="text-muted-foreground pb-2 text-center text-xs">
-              No documents found.
-            </p>
-          )
-        )}
-        <div className="max-h-[50vh] overflow-y-auto">
-          {filteredDocuments?.map((document) => (
-            <div
-              key={document._id}
-              role="button"
-              onClick={() => onClick(document._id)}
-              className="text-primary hover:bg-primary/5 flex w-full items-center justify-between rounded-sm text-sm"
-              aria-label="Document"
-            >
-              <span className="truncate pl-2">{document.title}</span>
-              <div className="flex items-center">
-                <ActionTooltip label="Restore page">
+    <TooltipProvider>
+      <div className="text-sm">
+        {/* Search row */}
+        <div className="flex items-center gap-x-1 border-b border-border p-2">
+          <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-7 border-none bg-transparent px-1 text-xs shadow-none focus-visible:ring-0"
+            placeholder="Filter by title…"
+          />
+          {documents.length > 0 && (
+            <ConfirmModal onConfirm={onEmptyTrash}>
+              <Tooltip>
+                <TooltipTrigger asChild>
                   <button
-                    onClick={(e) => onRestore(e, document._id)}
-                    className="rounded-sm p-2 hover:bg-neutral-200 dark:hover:bg-neutral-600"
-                    aria-label="Restore Document"
+                    className="shrink-0 rounded-sm p-1 transition-colors duration-150 hover:bg-accent"
+                    aria-label="Empty trash"
                   >
-                    <Undo className="text-muted-foreground h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5 text-rose-500" />
                   </button>
-                </ActionTooltip>
-                <ConfirmModal onConfirm={() => onRemove(document._id)}>
-                  <div>
-                    <ActionTooltip label="Delete forever">
-                      <button
-                        className="rounded-sm p-2 hover:bg-neutral-200 dark:hover:bg-neutral-600"
-                        aria-label="Delete Permanently"
-                      >
-                        <Trash className="text-muted-foreground h-4 w-4" />
-                      </button>
-                    </ActionTooltip>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p className="text-xs">Empty trash</p>
+                </TooltipContent>
+              </Tooltip>
+            </ConfirmModal>
+          )}
+        </div>
+
+        {/* List */}
+        <div className="px-1 py-1">
+          {documents.length === 0 ? (
+            <p className="py-4 text-center text-xs text-muted-foreground">
+              Trash is empty.
+            </p>
+          ) : filtered?.length === 0 ? (
+            <p className="py-4 text-center text-xs text-muted-foreground">
+              No results found.
+            </p>
+          ) : (
+            <div className="max-h-64 overflow-y-auto">
+              {filtered?.map((doc) => (
+                <div
+                  key={doc._id}
+                  role="button"
+                  onClick={() => onClick(doc._id)}
+                  className="group flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors duration-150 hover:bg-accent"
+                >
+                  <span className="truncate text-foreground/80">
+                    {doc.title || "Untitled"}
+                  </span>
+                  <div className="flex shrink-0 items-center gap-x-0.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={(e) => onRestore(e, doc._id)}
+                          className="rounded-sm p-1 transition-colors duration-150 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                          aria-label="Restore"
+                        >
+                          <Undo className="h-3.5 w-3.5 text-muted-foreground" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        <p className="text-xs">Restore</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <ConfirmModal onConfirm={() => onRemove(doc._id)}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            className="rounded-sm p-1 transition-colors duration-150 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                            aria-label="Delete permanently"
+                          >
+                            <Trash className="h-3.5 w-3.5 text-muted-foreground" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                          <p className="text-xs">Delete forever</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </ConfirmModal>
                   </div>
-                </ConfirmModal>
-              </div>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       </div>
-    </section>
+    </TooltipProvider>
   );
 };

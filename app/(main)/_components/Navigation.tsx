@@ -11,11 +11,13 @@ import { api } from "@/convex/_generated/api";
 import { DocumentList } from "./DocumentList";
 import { UserItem } from "./UserItem";
 import { Navbar } from "./Navbar";
+import { TrashBox } from "./TrashBox";
 
 import { toast } from "sonner";
-import { ChevronsLeft, MenuIcon, Moon, Plus, Search, Sun } from "lucide-react";
+import { ChevronsLeft, MenuIcon, Moon, Plus, Search, Sun, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useSearch } from "@/hooks/useSearch";
 
 const Navigation = () => {
   const router = useRouter();
@@ -24,13 +26,13 @@ const Navigation = () => {
   const isMobile = useMediaQuery("(max-width: 768px)");
   const create = useMutation(api.documents.create);
   const { theme, setTheme } = useTheme();
+  const onSearchOpen = useSearch((store) => store.onOpen);
 
   const isResizingRef = useRef(false);
   const sidebarRef = useRef<ComponentRef<"aside">>(null);
   const navbarRef = useRef<ComponentRef<"div">>(null);
   const [isResetting, setIsResetting] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(isMobile);
-  const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (isMobile) {
@@ -46,12 +48,9 @@ const Navigation = () => {
     }
   }, [pathname, isMobile]);
 
-  const handleMouseDown = (
-    event: React.MouseEvent<HTMLDivElement, MouseEvent>,
-  ) => {
+  const handleMouseDown = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     event.preventDefault();
     event.stopPropagation();
-
     isResizingRef.current = true;
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
@@ -60,17 +59,12 @@ const Navigation = () => {
   const handleMouseMove = (e: MouseEvent) => {
     if (!isResizingRef.current) return;
     let newWidth = e.clientX;
-
     if (newWidth < 240) newWidth = 240;
     if (newWidth > 480) newWidth = 480;
-
     if (sidebarRef.current && navbarRef.current) {
       sidebarRef.current.style.width = `${newWidth}px`;
       navbarRef.current.style.setProperty("left", `${newWidth}px`);
-      navbarRef.current.style.setProperty(
-        "width",
-        `calc(100% - ${newWidth}px)`,
-      );
+      navbarRef.current.style.setProperty("width", `calc(100% - ${newWidth}px)`);
     }
   };
 
@@ -84,12 +78,8 @@ const Navigation = () => {
     if (sidebarRef.current && navbarRef.current) {
       setIsCollapsed(false);
       setIsResetting(true);
-
       sidebarRef.current.style.width = isMobile ? "100%" : "256px";
-      navbarRef.current.style.setProperty(
-        "width",
-        isMobile ? "0" : "calc(100% - 256px)",
-      );
+      navbarRef.current.style.setProperty("width", isMobile ? "0" : "calc(100% - 256px)");
       navbarRef.current.style.setProperty("left", isMobile ? "100%" : "256px");
       setTimeout(() => setIsResetting(false), 300);
     }
@@ -99,7 +89,6 @@ const Navigation = () => {
     if (sidebarRef.current && navbarRef.current) {
       setIsCollapsed(true);
       setIsResetting(true);
-
       sidebarRef.current.style.width = "0";
       navbarRef.current.style.setProperty("width", "100%");
       navbarRef.current.style.setProperty("left", "0");
@@ -111,7 +100,6 @@ const Navigation = () => {
     const promise = create({ title: "Untitled" }).then((documentId) =>
       router.push(`/documents/${documentId}`),
     );
-
     toast.promise(promise, {
       loading: "Creating a new note...",
       success: "New note created.",
@@ -157,24 +145,50 @@ const Navigation = () => {
             <Plus className="mr-2 h-4 w-4" />
             New Note
           </Button>
-          <div className="relative mt-1">
-            <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Filter notes..."
-              className="h-8 pl-8 text-sm"
-            />
-          </div>
+          {/* Search button — opens SearchCommand modal */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onSearchOpen}
+            className="w-full justify-start text-muted-foreground"
+          >
+            <Search className="mr-2 h-4 w-4" />
+            Search
+            <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center rounded border border-border bg-muted px-1.5 font-mono text-[10px] text-muted-foreground">
+              ⌘K
+            </kbd>
+          </Button>
         </div>
 
         {/* Document list */}
         <div className="flex-1 overflow-y-auto px-2 py-1">
-          <DocumentList search={search} />
+          <DocumentList />
         </div>
 
         {/* Footer */}
-        <div className="border-t border-border px-3 py-2">
+        <div className="flex flex-col gap-y-1 border-t border-border px-3 py-2">
+          {/* Trash */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start text-muted-foreground"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Trash
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              side="right"
+              align="end"
+              className="w-80 p-0"
+            >
+              <TrashBox />
+            </PopoverContent>
+          </Popover>
+
+          {/* Theme toggle */}
           <Button
             variant="ghost"
             size="sm"
@@ -231,4 +245,5 @@ const Navigation = () => {
     </>
   );
 };
+
 export default Navigation;

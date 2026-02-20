@@ -66,7 +66,7 @@ export const SearchCommand = () => {
           return 0;
         }}
       >
-        <CommandInput placeholder={`Search ${user?.fullName}'s Zotion..`} />
+        <CommandInput placeholder={`Search ${user?.firstName ? `${user.firstName}'s ` : ""}Notes AI…`} />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup heading="Documents" className="pb-1">

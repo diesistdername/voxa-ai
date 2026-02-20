@@ -9,7 +9,13 @@ import { cn } from "@/lib/utils";
 import { api } from "@/convex/_generated/api";
 import { Id, Doc } from "@/convex/_generated/dataModel";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileText, Plus, ChevronRight } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { FileText, Plus, ChevronRight, MoreHorizontal, Trash2 } from "lucide-react";
 
 interface DocumentListProps {
   search?: string;
@@ -20,6 +26,7 @@ export const DocumentList = ({ search = "" }: DocumentListProps) => {
   const router = useRouter();
   const documents = useQuery(api.documents.getAllForSidebar);
   const create = useMutation(api.documents.create);
+  const archive = useMutation(api.documents.archive);
 
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
@@ -42,10 +49,7 @@ export const DocumentList = ({ search = "" }: DocumentListProps) => {
     router.push(`/documents/${documentId}`);
   };
 
-  const onCreateSubPage = (
-    e: React.MouseEvent,
-    parentId: Id<"documents">,
-  ) => {
+  const onCreateSubPage = (e: React.MouseEvent, parentId: Id<"documents">) => {
     e.stopPropagation();
     setExpanded((prev) => new Set(prev).add(parentId));
     const promise = create({ title: "Untitled", parentDocument: parentId }).then(
@@ -56,6 +60,19 @@ export const DocumentList = ({ search = "" }: DocumentListProps) => {
       success: "Sub-page created.",
       error: "Failed to create sub-page.",
     });
+  };
+
+  const onArchive = (e: React.MouseEvent, docId: Id<"documents">) => {
+    e.stopPropagation();
+    const promise = archive({ id: docId });
+    toast.promise(promise, {
+      loading: "Moving to trash...",
+      success: "Moved to trash.",
+      error: "Failed to archive.",
+    });
+    if (params.documentId === docId) {
+      router.push("/documents");
+    }
   };
 
   const toggleExpand = (e: React.MouseEvent, docId: string) => {
@@ -84,12 +101,13 @@ export const DocumentList = ({ search = "" }: DocumentListProps) => {
           role="button"
           style={{ paddingLeft: `${12 + level * 16}px` }}
           className={cn(
-            "group flex h-9 w-full cursor-pointer items-center gap-x-1 rounded-md pr-3 text-sm transition-colors duration-150",
+            "group flex h-9 w-full cursor-pointer items-center gap-x-1 rounded-md pr-1 text-sm transition-colors duration-150",
             isActive
               ? "bg-accent text-accent-foreground"
               : "text-foreground/80 hover:bg-accent hover:text-accent-foreground",
           )}
         >
+          {/* Expand chevron */}
           <button
             onClick={(e) => toggleExpand(e, doc._id)}
             className={cn(
@@ -106,6 +124,8 @@ export const DocumentList = ({ search = "" }: DocumentListProps) => {
               )}
             />
           </button>
+
+          {/* Icon + title */}
           <FileText
             className={cn(
               "h-4 w-4 shrink-0",
@@ -113,15 +133,48 @@ export const DocumentList = ({ search = "" }: DocumentListProps) => {
             )}
           />
           <span className="truncate">{doc.title || "Untitled"}</span>
-          <div
-            role="button"
-            title="Add sub-page"
-            onClick={(e) => onCreateSubPage(e, doc._id)}
-            className="ml-auto rounded-sm p-0.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:bg-neutral-200 dark:hover:bg-neutral-700"
-          >
-            <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+
+          {/* Actions — visible on hover */}
+          <div className="ml-auto flex items-center gap-x-0.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+            {/* Add sub-page */}
+            <div
+              role="button"
+              title="Add sub-page"
+              onClick={(e) => onCreateSubPage(e, doc._id)}
+              className="rounded-sm p-0.5 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+            >
+              <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+            </div>
+
+            {/* Three-dot menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <div
+                  role="button"
+                  title="More options"
+                  onClick={(e) => e.stopPropagation()}
+                  className="rounded-sm p-0.5 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                >
+                  <MoreHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                side="right"
+                align="start"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <DropdownMenuItem
+                  className="text-muted-foreground cursor-pointer"
+                  onClick={(e) => onArchive(e, doc._id)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Move to trash
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
+
         {isExpanded && children.map((child) => renderNode(child, level + 1))}
       </div>
     );
@@ -176,7 +229,7 @@ export const DocumentList = ({ search = "" }: DocumentListProps) => {
     );
   }
 
-  // Tree mode: no search
+  // Tree mode
   const roots = childrenMap.get("root") ?? [];
 
   if (roots.length === 0) {
