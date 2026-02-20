@@ -18,7 +18,8 @@
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(58.302% 0.23867 28.465);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
@@ -37,7 +38,6 @@
   --sidebar-ring: oklch(0.708 0 0);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
-  --dark: oklch(23.929% 0.00003 271.152);
 }
 
 .dark {
@@ -55,7 +55,8 @@
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(62.813% 0.25739 28.782);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
@@ -72,11 +73,10 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
-  --dark: oklch(23.929% 0.00003 271.152);
 }
 
 @theme inline {
-  --color-dark: var(--dark);
+  --font-sans: var(--font-inter);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -163,7 +163,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
   }
 
   button:not(:disabled),
@@ -172,7 +172,7 @@
   }
 
   ::-webkit-scrollbar {
-    @apply h-2.5 w-2.5;
+    @apply h-1.5 w-1.5;
   }
 
   ::-webkit-scrollbar-track {
@@ -180,8 +180,9 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-border rounded-full border border-solid border-transparent bg-clip-padding;
+    @apply bg-border/60 rounded-full;
   }
+
   ::-webkit-scrollbar-corner {
     @apply bg-transparent;
   }

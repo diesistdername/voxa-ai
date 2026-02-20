@@ -3,7 +3,6 @@
 import dynamic from "next/dynamic";
 import { useMemo, use } from "react";
 
-import { Cover } from "@/components/cover";
 import { Toolbar } from "@/components/toolbar";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -40,15 +39,12 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
 
   if (document === undefined) {
     return (
-      <div>
-        <Cover.Skeleton />
-        <div className="mx-auto mt-10 md:max-w-3xl lg:max-w-4xl">
-          <div className="space-y-4 pt-4 pl-8">
-            <Skeleton className="h-14 w-1/2" />
-            <Skeleton className="h-4 w-4/5" />
-            <Skeleton className="h-4 w-2/5" />
-            <Skeleton className="h-4 w-3/5" />
-          </div>
+      <div className="mx-auto max-w-3xl px-16 py-10">
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-1/2" />
+          <Skeleton className="h-4 w-4/5" />
+          <Skeleton className="h-4 w-2/5" />
+          <Skeleton className="h-4 w-3/5" />
         </div>
       </div>
     );
@@ -59,12 +55,9 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
   }
 
   return (
-    <div className="pb-40">
-      <Cover url={document.coverImage} />
-      <div className="relative mx-auto md:w-[90%]">
-        <Toolbar initialData={document} />
-        <Editor onChange={onChange} initialContent={document.content} />
-      </div>
+    <div className="mx-auto max-w-3xl px-16 py-10">
+      <Toolbar initialData={document} />
+      <Editor onChange={onChange} initialContent={document.content} />
     </div>
   );
 };

@@ -7,7 +7,6 @@ import {
   BlockNoteSchema,
 } from "@blocknote/core";
 import { useCreateBlockNote } from "@blocknote/react";
-import { useCoverImage } from "@/hooks/useCoverImage";
 import { BlockNoteView } from "@blocknote/mantine";
 import { useTheme } from "next-themes";
 import { useEdgeStore } from "@/lib/edgestore";
@@ -46,7 +45,6 @@ const Editor = ({ onChange, initialContent, editable }: EditorProps) => {
   const { resolvedTheme } = useTheme();
 
   const { edgestore } = useEdgeStore();
-  const coverImage = useCoverImage();
 
   const handleUpload = async (file: File) => {
     const res = await edgestore.publicFiles.upload({
@@ -68,26 +66,13 @@ const Editor = ({ onChange, initialContent, editable }: EditorProps) => {
     onChange(JSON.stringify(editor.document, null, 2));
   };
 
-  const handleCapture = (e: React.DragEvent) => {
-    if (coverImage.isOpen) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  };
-
   return (
-    <div
-      className="relative"
-      onDropCapture={handleCapture}
-      onDragOverCapture={handleCapture}
-    >
-      <BlockNoteView
-        editable={editable && !coverImage.isOpen}
-        editor={editor}
-        theme={resolvedTheme === "dark" ? "dark" : "light"}
-        onChange={handleEditorChange}
-      />
-    </div>
+    <BlockNoteView
+      editable={editable}
+      editor={editor}
+      theme={resolvedTheme === "dark" ? "dark" : "light"}
+      onChange={handleEditorChange}
+    />
   );
 };
 

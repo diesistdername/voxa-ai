@@ -9,7 +9,7 @@ import { EdgeStoreProvider } from "@/lib/edgestore";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ToasterProvider } from "@/components/providers/toaster-provider";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: "Zotion",
@@ -37,8 +37,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+    <html lang="en" suppressHydrationWarning className={inter.variable}>
+      <body>
         <ClerkProvider>
           <ConvexClientProvider>
             <EdgeStoreProvider>

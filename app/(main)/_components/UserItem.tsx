@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,58 +9,34 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SignOutButton, useUser } from "@clerk/nextjs";
-import { ChevronsLeftRight } from "lucide-react";
 
 export const UserItem = () => {
   const { user } = useUser();
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger>
-        <div
-          role="button"
-          className="hover:bg-primary/5 flex w-full items-center p-3 text-sm"
-        >
-          <div className="flex max-w-39 items-center gap-x-2">
-            <Avatar className="h-5 w-5">
-              <AvatarImage src={user?.imageUrl} />
-            </Avatar>
-            <span className="line-clamp-1 text-start font-medium">
-              {user?.fullName}&apos;s Zotion
-            </span>
-          </div>
-          <ChevronsLeftRight className="text-muted-foreground ml-2 h-4 w-4 rotate-90" />
-        </div>
+      <DropdownMenuTrigger asChild>
+        <button className="flex w-full items-center gap-x-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors duration-150 hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+          <Avatar className="h-5 w-5 shrink-0" size="sm">
+            <AvatarImage src={user?.imageUrl} />
+            <AvatarFallback className="text-xs">
+              {user?.firstName?.charAt(0) ?? "U"}
+            </AvatarFallback>
+          </Avatar>
+          <span className="truncate">
+            {user?.firstName ?? user?.fullName ?? "Account"}
+          </span>
+        </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        className="w-80"
-        align="start"
-        alignOffset={11}
-        forceMount
-      >
-        <div className="flex flex-col space-y-4 p-2">
-          <p className="text-muted-foreground text-xs leading-none font-medium">
+      <DropdownMenuContent className="w-56" align="start" forceMount>
+        <div className="px-2 py-1.5">
+          <p className="truncate text-xs text-muted-foreground">
             {user?.emailAddresses[0]?.emailAddress}
           </p>
-          <div className="flex items-center gap-x-2">
-            <div className="bg-secondary rounded-md p-1">
-              <Avatar>
-                <AvatarImage src={user?.imageUrl} />
-              </Avatar>
-            </div>
-            <div className="space-y-1">
-              <p className="line-clamp-1 text-sm">
-                {user?.fullName}&apos;s Zotion
-              </p>
-            </div>
-          </div>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          asChild
-          className="text-muted-foreground w-full cursor-pointer"
-        >
-          <SignOutButton>Log Out</SignOutButton>
+        <DropdownMenuItem asChild className="cursor-pointer">
+          <SignOutButton>Log out</SignOutButton>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

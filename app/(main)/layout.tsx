@@ -1,41 +1,34 @@
 "use client";
 
+import { useEffect } from "react";
 import { Spinner } from "@/components/spinner";
 import { useConvexAuth } from "convex/react";
 import { useAuth } from "@clerk/nextjs";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Navigation from "./_components/Navigation";
 import { SearchCommand } from "@/components/search-command";
 
 const MainLayout = ({ children }: { children: React.ReactNode }) => {
+  const router = useRouter();
   const { isSignedIn, isLoaded: isClerkLoaded } = useAuth();
   const { isAuthenticated, isLoading: isConvexLoading } = useConvexAuth();
 
-  // Clerk hasn't resolved yet
-  if (!isClerkLoaded) {
-    return (
-      <div className="dark:bg-dark flex h-full items-center justify-center">
-        <Spinner size="md" />
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (isClerkLoaded && !isSignedIn) {
+      router.replace("/sign-in");
+    }
+  }, [isClerkLoaded, isSignedIn, router]);
 
-  // Clerk says not signed in — redirect immediately, no need to wait for Convex
-  if (!isSignedIn) {
-    return redirect("/");
-  }
-
-  // Convex is still handshaking — show spinner, don't redirect
-  if (isConvexLoading) {
+  if (!isClerkLoaded || !isSignedIn || isConvexLoading) {
     return (
-      <div className="dark:bg-dark flex h-full items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <Spinner size="md" />
       </div>
     );
   }
 
   return (
-    <div className="dark:bg-dark flex h-full">
+    <div className="flex h-full">
       <Navigation />
       <main className="h-full flex-1 overflow-y-auto">
         <SearchCommand />

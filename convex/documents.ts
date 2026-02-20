@@ -300,9 +300,35 @@ export const update = mutation({
 
     const document = await ctx.db.patch(args.id, {
       ...rest,
+      updatedAt: Date.now(),
     });
 
     return document;
+  },
+});
+
+export const getAllForSidebar = query({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const userId = identity.subject;
+
+    const documents = await ctx.db
+      .query("documents")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("isArchived"), false))
+      .order("desc")
+      .collect();
+
+    return documents.sort((a, b) => {
+      const aTime = a.updatedAt ?? a._creationTime;
+      const bTime = b.updatedAt ?? b._creationTime;
+      return bTime - aTime;
+    });
   },
 });
 

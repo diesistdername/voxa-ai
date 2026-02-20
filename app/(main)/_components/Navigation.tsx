@@ -4,48 +4,33 @@ import React, { ComponentRef, useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "usehooks-ts";
 import { useMutation } from "convex/react";
 import { useParams, usePathname, useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 
 import { cn } from "@/lib/utils";
 import { api } from "@/convex/_generated/api";
 import { DocumentList } from "./DocumentList";
-import { Item } from "./Item";
 import { UserItem } from "./UserItem";
+import { Navbar } from "./Navbar";
 
 import { toast } from "sonner";
-import {
-  ChevronsLeft,
-  MenuIcon,
-  Plus,
-  PlusCircle,
-  Search,
-  Settings,
-  Trash,
-} from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { TrashBox } from "./TrashBox";
-import { useSearch } from "@/hooks/useSearch";
-import { useSettings } from "@/hooks/useSettings";
-import { Navbar } from "./Navbar";
-import { ScrollableList } from "@/components/scrollable-list";
+import { ChevronsLeft, MenuIcon, Moon, Plus, Search, Sun } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const Navigation = () => {
-  const search = useSearch();
-  const settings = useSettings();
   const router = useRouter();
   const pathname = usePathname();
   const params = useParams();
   const isMobile = useMediaQuery("(max-width: 768px)");
   const create = useMutation(api.documents.create);
+  const { theme, setTheme } = useTheme();
 
   const isResizingRef = useRef(false);
   const sidebarRef = useRef<ComponentRef<"aside">>(null);
   const navbarRef = useRef<ComponentRef<"div">>(null);
   const [isResetting, setIsResetting] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(isMobile);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (isMobile) {
@@ -100,13 +85,12 @@ const Navigation = () => {
       setIsCollapsed(false);
       setIsResetting(true);
 
-      sidebarRef.current.style.width = isMobile ? "100%" : "240px";
-      navbarRef.current.style.removeProperty("width");
+      sidebarRef.current.style.width = isMobile ? "100%" : "256px";
       navbarRef.current.style.setProperty(
         "width",
-        isMobile ? "0" : "calc(100%-240px)",
+        isMobile ? "0" : "calc(100% - 256px)",
       );
-      navbarRef.current.style.setProperty("left", isMobile ? "100%" : "240px");
+      navbarRef.current.style.setProperty("left", isMobile ? "100%" : "256px");
       setTimeout(() => setIsResetting(false), 300);
     }
   };
@@ -129,7 +113,7 @@ const Navigation = () => {
     );
 
     toast.promise(promise, {
-      loading: "Creating a new note....",
+      loading: "Creating a new note...",
       success: "New note created.",
       error: "Failed to create a note.",
     });
@@ -140,57 +124,85 @@ const Navigation = () => {
       <aside
         ref={sidebarRef}
         className={cn(
-          "group/sidebar bg-secondary relative z-300 flex h-full w-60 flex-col overflow-hidden overflow-x-hidden pb-4",
+          "group/sidebar relative z-300 flex h-full w-64 flex-col overflow-hidden",
+          "bg-background border-r border-border",
           isResetting && "transition-all duration-300 ease-in-out",
           isMobile && "w-0",
         )}
       >
-        <div
+        {/* Collapse button */}
+        <button
           onClick={collapse}
-          role="button"
+          aria-label="Collapse sidebar"
           className={cn(
-            "text-muted-foreground absolute top-3 right-2 h-6 w-6 rounded-sm opacity-0 transition group-hover/sidebar:opacity-100 hover:bg-neutral-300 dark:hover:bg-neutral-600",
+            "text-muted-foreground absolute top-3 right-2 h-6 w-6 rounded-sm opacity-0",
+            "transition-colors duration-150 hover:bg-accent hover:text-accent-foreground",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+            "group-hover/sidebar:opacity-100",
             isMobile && "opacity-100",
           )}
         >
           <ChevronsLeft className="h-6 w-6" />
-        </div>
-        <div>
+        </button>
+
+        {/* Header */}
+        <div className="flex flex-col gap-y-1 px-3 pt-3 pb-2">
           <UserItem />
-          <Item label="Search" icon={Search} isSearch onClick={search.onOpen} />
-          <Item label="Settings" icon={Settings} onClick={settings.onOpen} />
-          <Item onClick={handleCreate} label="New page" icon={PlusCircle} />
-        </div>
-        <div className="mt-4">
-          <div>
-            <ScrollableList>
-              <DocumentList />
-            </ScrollableList>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCreate}
+            className="w-full justify-start"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            New Note
+          </Button>
+          <div className="relative mt-1">
+            <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Filter notes..."
+              className="h-8 pl-8 text-sm"
+            />
           </div>
-          <Item onClick={handleCreate} icon={Plus} label="Add a page" />
-          <Popover>
-            <PopoverTrigger className="mt-3 w-full">
-              <Item label="Trash" icon={Trash} />
-            </PopoverTrigger>
-            <PopoverContent
-              side={isMobile ? "bottom" : "right"}
-              className="w-72 p-0"
-              collisionPadding={16}
-            >
-              <TrashBox />
-            </PopoverContent>
-          </Popover>
         </div>
+
+        {/* Document list */}
+        <div className="flex-1 overflow-y-auto px-2 py-1">
+          <DocumentList search={search} />
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-border px-3 py-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="w-full justify-start"
+          >
+            {theme === "dark" ? (
+              <Sun className="mr-2 h-4 w-4" />
+            ) : (
+              <Moon className="mr-2 h-4 w-4" />
+            )}
+            {theme === "dark" ? "Light mode" : "Dark mode"}
+          </Button>
+        </div>
+
+        {/* Resize handle */}
         <div
           onMouseDown={handleMouseDown}
           onClick={resetWidth}
-          className="bg-primary/10 absolute top-0 right-0 h-full w-1 cursor-ew-resize opacity-0 transition group-hover/sidebar:opacity-100"
-        ></div>
+          className="bg-primary/10 absolute top-0 right-0 h-full w-1 cursor-ew-resize opacity-0 transition-opacity duration-150 group-hover/sidebar:opacity-100"
+        />
       </aside>
+
+      {/* Top navbar (document title bar) */}
       <div
         ref={navbarRef}
         className={cn(
-          "absolute top-0 left-60 z-40 w-[calc(100%-240px)]",
+          "absolute top-0 left-64 z-40 w-[calc(100%-256px)]",
           isResetting && "transition-all duration-300 ease-in-out",
           isMobile && "left-0 w-full",
         )}

@@ -6,9 +6,7 @@ import { useQuery } from "convex/react";
 import { MenuIcon } from "lucide-react";
 import { useParams } from "next/navigation";
 import { Title } from "./Title";
-import { Banner } from "./Banner";
 import { Menu } from "./Menu";
-import { Publish } from "./Publish";
 
 interface NavbarProps {
   isCollapsed: boolean;
@@ -23,7 +21,7 @@ export const Navbar = ({ isCollapsed, onResetWidth }: NavbarProps) => {
 
   if (document === undefined) {
     return (
-      <nav className="bg-background dark:bg-dark flex w-full items-center justify-between px-3 py-2">
+      <nav className="flex h-12 w-full items-center justify-between border-b border-border bg-background px-4">
         <Title.Skeleton />
         <div className="flex items-center gap-x-2">
           <Menu.Skeleton />
@@ -37,25 +35,22 @@ export const Navbar = ({ isCollapsed, onResetWidth }: NavbarProps) => {
   }
 
   return (
-    <>
-      <nav className="bg-background dark:bg-dark flex w-full items-center gap-x-2 px-3 py-2">
-        {isCollapsed && (
-          <button aria-label="Menu">
-            <MenuIcon
-              onClick={onResetWidth}
-              className="text-muted-foreground h-6 w-6"
-            />
-          </button>
-        )}
-        <div className="flex w-full items-center justify-between">
-          <Title initialData={document} />
-          <div className="flex items-center gap-x-2">
-            <Publish initialData={document} />
-            <Menu documentId={document._id} />
-          </div>
+    <nav className="flex h-12 w-full items-center gap-x-2 border-b border-border bg-background px-4">
+      {isCollapsed && (
+        <button
+          aria-label="Menu"
+          onClick={onResetWidth}
+          className="rounded-sm transition-colors duration-150 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          <MenuIcon className="text-muted-foreground h-6 w-6" />
+        </button>
+      )}
+      <div className="flex w-full items-center justify-between">
+        <Title initialData={document} />
+        <div className="flex items-center gap-x-2">
+          <Menu documentId={document._id} />
         </div>
-      </nav>
-      {document.isArchived && <Banner documentId={document._id} />}
-    </>
+      </div>
+    </nav>
   );
 };
