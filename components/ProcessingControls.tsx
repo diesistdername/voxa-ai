@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useState, useRef } from "react";
 import { Check, FoldVertical, Highlighter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
@@ -32,9 +32,19 @@ export const ProcessingControls = ({
   });
   const [extraOverlays, setExtraOverlays] = useState<React.CSSProperties[]>([]);
 
+  // Refs always hold the latest prop values so the stable callback never goes stale
+  const blockIdRef = useRef(blockId);
+  const extraBlockIdsRef = useRef(extraBlockIds);
+  blockIdRef.current = blockId;
+  extraBlockIdsRef.current = extraBlockIds;
+
+  // Stable callback — reads from refs, never needs to be recreated
   const updateOverlays = useCallback(() => {
+    const bid = blockIdRef.current;
+    const eids = extraBlockIdsRef.current;
+
     // Primary (current block) overlay
-    const blockEl = window.document.querySelector(`[data-id="${blockId}"]`);
+    const blockEl = document.querySelector(`[data-id="${bid}"]`);
     if (!blockEl) {
       setOverlayStyle({ display: "none" });
     } else {
@@ -51,29 +61,29 @@ export const ProcessingControls = ({
     }
 
     // Extra (selected) overlays
-    if (extraBlockIds && extraBlockIds.length > 0) {
+    if (eids && eids.length > 0) {
       setExtraOverlays(
-        extraBlockIds.map((id) => {
-          const el = window.document.querySelector(`[data-id="${id}"]`);
+        eids.map((id) => {
+          const el = document.querySelector(`[data-id="${id}"]`);
           if (!el) return { display: "none" } as React.CSSProperties;
           const r = el.getBoundingClientRect();
           return {
-            position: "fixed",
-            pointerEvents: "none",
+            position: "fixed" as const,
+            pointerEvents: "none" as const,
             zIndex: 38,
             top: r.top,
             left: r.left,
             width: r.width,
             height: Math.max(r.height, 24),
-          } as React.CSSProperties;
+          };
         }),
       );
     } else {
       setExtraOverlays([]);
     }
-  }, [blockId, extraBlockIds]);
+  }, []); // stable — deps accessed via refs
 
-  // Update overlays when blockId or extraBlockIds change
+  // Re-run overlay calculation whenever blockId or extraBlockIds change
   useEffect(() => {
     const raf = requestAnimationFrame(updateOverlays);
     return () => cancelAnimationFrame(raf);
@@ -81,22 +91,36 @@ export const ProcessingControls = ({
 
   // Keep overlays in sync while scrolling / resizing
   useEffect(() => {
-    const scroller = window.document.querySelector("main");
+    const scroller = document.querySelector("main");
     scroller?.addEventListener("scroll", updateOverlays, { passive: true });
     window.addEventListener("resize", updateOverlays);
     return () => {
       scroller?.removeEventListener("scroll", updateOverlays);
       window.removeEventListener("resize", updateOverlays);
     };
-  }, [updateOverlays]);
+  }, [updateOverlays]); // registers once — updateOverlays is stable
 
   // --- Keyboard shortcuts ---
   // Up=previous, Space=hide, Shift+Down=add to selection, Down=keep,
   // Enter/Right=highlight, Esc=stop  (ArrowLeft unbound)
+  //
+  // capture:true ensures we intercept before BlockNote, which calls
+  // stopPropagation on Shift+ArrowDown (its text-selection gesture).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Shift+Down: always intercept — explicit processing-mode gesture.
+      // stopPropagation prevents BlockNote from extending text selection.
+      if (e.key === "ArrowDown" && e.shiftKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        onAddSelection();
+        return;
+      }
+
+      // All other shortcuts: skip while the user is typing inside the editor
       const inEditor = (e.target as Element | null)?.closest?.(".bn-editor");
       if (inEditor) return;
+
       switch (e.key) {
         case "ArrowUp":
           e.preventDefault();
@@ -108,11 +132,7 @@ export const ProcessingControls = ({
           break;
         case "ArrowDown":
           e.preventDefault();
-          if (e.shiftKey) {
-            onAddSelection();
-          } else {
-            onKeep();
-          }
+          onKeep();
           break;
         case "Enter":
         case "ArrowRight":
@@ -124,8 +144,8 @@ export const ProcessingControls = ({
           break;
       }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, { capture: true });
+    return () => window.removeEventListener("keydown", onKey, { capture: true });
   }, [onHide, onKeep, onHighlight, onPrevious, onExit, onAddSelection]);
 
   return (

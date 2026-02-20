@@ -57,4 +57,4 @@ async function handleRequest(request: NextRequest) {
 export const GET = handleRequest;
 export const POST = handleRequest;
 
-export type EdgeStoreRouter = typeof edgeStoreRouter;
+export type EdgeStoreRouter = NonNullable<typeof edgeStoreRouter>;

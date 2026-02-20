@@ -175,14 +175,14 @@
 
   /* Processing Mode — selected (Shift+Down) block overlay */
   .processing-selected-block {
-    background-color: oklch(0.85 0.08 240 / 0.10) !important;
+    background-color: oklch(0.85 0.08 240 / 0.16) !important;
     border-radius: 6px;
-    box-shadow: 0 0 0 1px oklch(0.55 0.18 240 / 0.45);
+    box-shadow: 0 0 0 2px oklch(0.55 0.18 240 / 0.55);
   }
 
   .dark .processing-selected-block {
-    background-color: oklch(0.60 0.12 240 / 0.13) !important;
-    box-shadow: 0 0 0 1px oklch(0.55 0.18 240 / 0.45);
+    background-color: oklch(0.60 0.12 240 / 0.20) !important;
+    box-shadow: 0 0 0 2px oklch(0.55 0.18 240 / 0.55);
   }
 
   /* Hidden blocks — collapse wrapper to zero height; toggle floats in the left gutter */
